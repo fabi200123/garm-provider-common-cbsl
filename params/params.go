@@ -130,6 +130,13 @@ type Address struct {
 	Type    AddressType `json:"type"`
 }
 
+type ProviderVersion struct {
+	// Minimum required version of the provider.
+	MinVersion string `json:"min_version"`
+	// Current version of the provider.
+	Version string `json:"version"`
+}
+
 type ProviderInstance struct {
 	// PeoviderID is the unique ID the provider associated
 	// with the compute instance. We use this to identify the
