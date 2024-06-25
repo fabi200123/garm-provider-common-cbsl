@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/pkg/errors"
 )
 

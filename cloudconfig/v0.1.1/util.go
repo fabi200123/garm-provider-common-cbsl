@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/cloudbase/garm-provider-common/defaults"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/pkg/errors"
 )
 

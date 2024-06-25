@@ -24,7 +24,7 @@ import (
 	"os"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 
 	"github.com/mattn/go-isatty"
 )
@@ -50,11 +50,12 @@ func ResolveErrorToExitCode(err error) int {
 
 func GetEnvironment() (Environment, error) {
 	env := Environment{
-		Command:            ExecutionCommand(os.Getenv("GARM_COMMAND")),
-		ControllerID:       os.Getenv("GARM_CONTROLLER_ID"),
-		PoolID:             os.Getenv("GARM_POOL_ID"),
-		ProviderConfigFile: os.Getenv("GARM_PROVIDER_CONFIG_FILE"),
-		InstanceID:         os.Getenv("GARM_INSTANCE_ID"),
+		Command:              ExecutionCommand(os.Getenv("GARM_COMMAND")),
+		ControllerID:         os.Getenv("GARM_CONTROLLER_ID"),
+		PoolID:               os.Getenv("GARM_POOL_ID"),
+		ProviderConfigFile:   os.Getenv("GARM_PROVIDER_CONFIG_FILE"),
+		InstanceID:           os.Getenv("GARM_INSTANCE_ID"),
+		GarmInterfaceVersion: os.Getenv("GARM_INTERFACE_VERSION"),
 	}
 
 	// If this is a CreateInstance command, we need to get the bootstrap params
@@ -77,10 +78,6 @@ func GetEnvironment() (Environment, error) {
 		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
 			return Environment{}, fmt.Errorf("failed to decode instance params: %w", err)
 		}
-		if bootstrapParams.ExtraSpecs == nil {
-			// Initialize ExtraSpecs as an empty JSON object
-			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
-		}
 		env.BootstrapParams = bootstrapParams
 	}
 
@@ -92,12 +89,13 @@ func GetEnvironment() (Environment, error) {
 }
 
 type Environment struct {
-	Command            ExecutionCommand
-	ControllerID       string
-	PoolID             string
-	ProviderConfigFile string
-	InstanceID         string
-	BootstrapParams    params.BootstrapInstance
+	Command              ExecutionCommand
+	ControllerID         string
+	PoolID               string
+	ProviderConfigFile   string
+	InstanceID           string
+	GarmInterfaceVersion string
+	BootstrapParams      params.BootstrapInstance
 }
 
 func (e Environment) Validate() error {
@@ -138,6 +136,10 @@ func (e Environment) Validate() error {
 			return fmt.Errorf("missing pool ID")
 		}
 	case RemoveAllInstancesCommand:
+		if e.ControllerID == "" {
+			return fmt.Errorf("missing controller ID")
+		}
+	case GetVersionInfoCommand:
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")
 		}
@@ -198,13 +200,15 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
 	case GetVersionInfoCommand:
-		version, err := provider.GetVersionInfo(ctx)
-		//TODO: Modify to not be an error, but use version v0.1.0 instead
+		versionInfo, err := provider.GetVersionInfo(ctx)
 		if err != nil {
-			return "", fmt.Errorf("failed to get version info: %w", err)
+			os.Setenv("GARM_PROVIDER_VERSION", "v0.1.0")
+			break
 		}
-
-		asJs, err := json.Marshal(version)
+		if env.GarmInterfaceVersion > versionInfo.MaximumVersion {
+			os.Setenv("GARM_PROVIDER_VERSION", versionInfo.MaximumVersion)
+		}
+		asJs, err := json.Marshal(versionInfo)
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal response: %w", err)
 		}

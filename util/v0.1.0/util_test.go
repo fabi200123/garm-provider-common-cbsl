@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.0"
 	"github.com/stretchr/testify/require"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
