@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.0"
 	"github.com/stretchr/testify/require"
 )
 

@@ -24,7 +24,7 @@ import (
 	"os"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 
 	"github.com/mattn/go-isatty"
 )
@@ -196,6 +196,16 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 	case StopInstanceCommand:
 		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
+		}
+	case GetVersionInfoCommand:
+		if version, err := provider.GetVersionInfo(ctx); err != nil {
+			os.Setenv("GARM_INTERFACE_VERSION", "v0.1.0")
+		} else {
+			asJs, err := json.Marshal(version)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal response: %w", err)
+			}
+			ret = string(asJs)
 		}
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)

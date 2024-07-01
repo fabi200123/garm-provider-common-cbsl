@@ -32,7 +32,7 @@ import (
 	"unicode/utf16"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 
 	"github.com/google/uuid"
 	gorillaHandlers "github.com/gorilla/handlers"
