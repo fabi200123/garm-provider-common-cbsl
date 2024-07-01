@@ -24,4 +24,5 @@ const (
 	StartInstanceCommand      ExecutionCommand = "StartInstance"
 	StopInstanceCommand       ExecutionCommand = "StopInstance"
 	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
+	GetVersionInfoCommand     ExecutionCommand = "GetVersionInfo"
 )

@@ -166,3 +166,8 @@ type ProviderInstance struct {
 	// responsible for managing the lifecycle of the runner.
 	ProviderFault []byte `json:"provider_fault,omitempty"`
 }
+
+type VersionInfo struct {
+	MinVersion string `json:"min_version"`
+	MaxVersion string `json:"max_version"`
+}

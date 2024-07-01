@@ -82,6 +82,13 @@ func (p *testExternalProvider) Start(context.Context, string) error {
 	return nil
 }
 
+func (p *testExternalProvider) GetVersionInfo(context.Context) (params.VersionInfo, error) {
+	if p.mockErr != nil {
+		return params.VersionInfo{}, p.mockErr
+	}
+	return params.VersionInfo{}, nil
+}
+
 func TestResolveErrorToExitCode(t *testing.T) {
 	tests := []struct {
 		name string
