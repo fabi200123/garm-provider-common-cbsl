@@ -35,6 +35,10 @@ set -x
 CALLBACK_URL="{{ .CallbackURL }}"
 METADATA_URL="{{ .MetadataURL }}"
 BEARER_TOKEN="{{ .CallbackToken }}"
+{{- if .ExtraContext.OFS_DIR }}
+OFS_DIR_E="{{ .ExtraContext.OFS_DIR }}"
+{{- end }}
+OFS_DIR=${OFS_DIR_E:-"/opt/work"}
 
 if [ -z "$METADATA_URL" ];then
 	echo "no token is available and METADATA_URL is not set"
@@ -126,8 +130,16 @@ if [ -z "$CACHED_RUNNER" ];then
 	sudo ./bin/installdependencies.sh || fail "failed to install dependencies"
 else
 	sendStatus "using cached runner found in $CACHED_RUNNER"
-	sudo cp -a "$CACHED_RUNNER"  "/home/{{ .RunnerUsername }}/actions-runner"
-	sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R "/home/{{ .RunnerUsername }}/actions-runner" || fail "failed to change owner"
+	OFS_AVAIL=1
+	RUN_HOME="/home/{{ .RunnerUsername }}/actions-runner"
+	sudo mkdir -p $OFS_DIR/upper-layer $OFS_DIR/work-layer $RUN_HOME
+	sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R $OFS_DIR/upper-layer $OFS_DIR/work-layer $CACHED_RUNNER $RUN_HOME
+	sudo mount -t overlay overlay -o lowerdir=$CACHED_RUNNER,upperdir=$OFS_DIR/upper-layer,workdir=$OFS_DIR/work-layer $RUN_HOME || OFS_AVAIL=0
+	if [ $OFS_AVAIL -eq 0 ];then
+		sendStatus "falling back to non-overlayfs mode"
+		sudo cp -a "$CACHED_RUNNER/." $RUN_HOME || fail "failed to copy cached runner"
+		sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R "$RUN_HOME" || fail "failed to change owner"
+	fi
 	cd /home/{{ .RunnerUsername }}/actions-runner
 fi
 
