@@ -12,7 +12,7 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package execution
+package executionv011
 
 import (
 	"bytes"
@@ -48,8 +48,8 @@ func ResolveErrorToExitCode(err error) int {
 	return 0
 }
 
-func GetEnvironment() (Environment, error) {
-	env := Environment{
+func GetEnvironment() (EnvironmentV011, error) {
+	env := EnvironmentV011{
 		Command:            ExecutionCommand(os.Getenv("GARM_COMMAND")),
 		ControllerID:       os.Getenv("GARM_CONTROLLER_ID"),
 		PoolID:             os.Getenv("GARM_POOL_ID"),
@@ -63,21 +63,21 @@ func GetEnvironment() (Environment, error) {
 	// from stdin
 	if env.Command == CreateInstanceCommand {
 		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-			return Environment{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
+			return EnvironmentV011{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
 		}
 
 		var data bytes.Buffer
 		if _, err := io.Copy(&data, os.Stdin); err != nil {
-			return Environment{}, fmt.Errorf("failed to copy bootstrap params")
+			return EnvironmentV011{}, fmt.Errorf("failed to copy bootstrap params")
 		}
 
 		if data.Len() == 0 {
-			return Environment{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
+			return EnvironmentV011{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
 		}
 
 		var bootstrapParams params.BootstrapInstance
 		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
-			return Environment{}, fmt.Errorf("failed to decode instance params: %w", err)
+			return EnvironmentV011{}, fmt.Errorf("failed to decode instance params: %w", err)
 		}
 		if bootstrapParams.ExtraSpecs == nil {
 			// Initialize ExtraSpecs as an empty JSON object
@@ -87,13 +87,13 @@ func GetEnvironment() (Environment, error) {
 	}
 
 	if err := env.Validate(); err != nil {
-		return Environment{}, fmt.Errorf("failed to validate execution environment: %w", err)
+		return EnvironmentV011{}, fmt.Errorf("failed to validate execution environment: %w", err)
 	}
 
 	return env, nil
 }
 
-type Environment struct {
+type EnvironmentV011 struct {
 	Command            ExecutionCommand
 	ControllerID       string
 	PoolID             string
@@ -104,7 +104,7 @@ type Environment struct {
 	BootstrapParams    params.BootstrapInstance
 }
 
-func (e Environment) Validate() error {
+func (e EnvironmentV011) Validate() error {
 	if e.Command == "" {
 		return fmt.Errorf("missing GARM_COMMAND")
 	}
@@ -155,7 +155,7 @@ func (e Environment) Validate() error {
 	return nil
 }
 
-func Run(ctx context.Context, provider ExternalProvider, env Environment) (string, error) {
+func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (string, error) {
 	var ret string
 	switch env.Command {
 	case CreateInstanceCommand:
