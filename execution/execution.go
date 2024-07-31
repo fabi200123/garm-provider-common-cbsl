@@ -12,16 +12,16 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package executionv010
+package execution
 
-type ExecutionCommand string
-
-const (
-	CreateInstanceCommand     ExecutionCommand = "CreateInstance"
-	DeleteInstanceCommand     ExecutionCommand = "DeleteInstance"
-	GetInstanceCommand        ExecutionCommand = "GetInstance"
-	ListInstancesCommand      ExecutionCommand = "ListInstances"
-	StartInstanceCommand      ExecutionCommand = "StartInstance"
-	StopInstanceCommand       ExecutionCommand = "StopInstance"
-	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
+import (
+	semver "github.com/Masterminds/semver/v3"
+	executionv010 "github.com/cloudbase/garm-provider-common/execution/v0.1.0"
+	executionv011 "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 )
+
+type Environment struct {
+	EnvironmentV010  executionv010.EnvironmentV010
+	EnvironmentV011  executionv011.EnvironmentV011
+	InterfaceVersion semver.Version
+}
