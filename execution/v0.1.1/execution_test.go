@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
+	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
 	"github.com/stretchr/testify/require"
 )
@@ -135,7 +136,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "valid environment",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ControllerID:       "controller-id",
 				PoolID:             "pool-id",
 				ProviderConfigFile: tmpfile.Name(),
@@ -157,7 +158,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "invalid provider config file",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ProviderConfigFile: "",
 			},
 			errString: "missing GARM_PROVIDER_CONFIG_FILE",
@@ -165,7 +166,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "error accessing config file",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ProviderConfigFile: "invalid-file",
 			},
 			errString: "error accessing config file",
@@ -173,7 +174,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "invalid controller ID",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ProviderConfigFile: tmpfile.Name(),
 			},
 			errString: "missing GARM_CONTROLLER_ID",
@@ -182,7 +183,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "invalid instance ID",
 			env: EnvironmentV011{
-				Command:            DeleteInstanceCommand,
+				Command:            common.DeleteInstanceCommand,
 				ProviderConfigFile: tmpfile.Name(),
 				ControllerID:       "controller-id",
 				InstanceID:         "",
@@ -192,7 +193,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "invalid pool ID",
 			env: EnvironmentV011{
-				Command:            ListInstancesCommand,
+				Command:            common.ListInstancesCommand,
 				ProviderConfigFile: tmpfile.Name(),
 				ControllerID:       "controller-id",
 				PoolID:             "",
@@ -202,7 +203,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "invalid bootstrap params",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ProviderConfigFile: tmpfile.Name(),
 				ControllerID:       "controller-id",
 				PoolID:             "pool-id",
@@ -213,7 +214,7 @@ func TestValidateEnvironment(t *testing.T) {
 		{
 			name: "missing pool ID",
 			env: EnvironmentV011{
-				Command:            CreateInstanceCommand,
+				Command:            common.CreateInstanceCommand,
 				ProviderConfigFile: tmpfile.Name(),
 				ControllerID:       "controller-id",
 				PoolID:             "",
@@ -262,7 +263,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Valid environment",
 			providerEnv: EnvironmentV011{
-				Command: CreateInstanceCommand,
+				Command: common.CreateInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -274,7 +275,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to create instance",
 			providerEnv: EnvironmentV011{
-				Command: CreateInstanceCommand,
+				Command: common.CreateInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -286,7 +287,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to get instance",
 			providerEnv: EnvironmentV011{
-				Command: GetInstanceCommand,
+				Command: common.GetInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -298,7 +299,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to list instances",
 			providerEnv: EnvironmentV011{
-				Command: ListInstancesCommand,
+				Command: common.ListInstancesCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -310,7 +311,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to delete instance",
 			providerEnv: EnvironmentV011{
-				Command: DeleteInstanceCommand,
+				Command: common.DeleteInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -322,7 +323,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to remove all instances",
 			providerEnv: EnvironmentV011{
-				Command: RemoveAllInstancesCommand,
+				Command: common.RemoveAllInstancesCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -334,7 +335,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to start instance",
 			providerEnv: EnvironmentV011{
-				Command: StartInstanceCommand,
+				Command: common.StartInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -346,7 +347,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "Failed to stop instance",
 			providerEnv: EnvironmentV011{
-				Command: StopInstanceCommand,
+				Command: common.StopInstanceCommand,
 			},
 			providerInstance: params.ProviderInstance{
 				Name:   "test-instance",
@@ -460,7 +461,7 @@ func TestGetEnvironment(t *testing.T) {
 		env, err := GetEnvironment()
 		if tc.errString == "" {
 			require.NoError(t, err)
-			require.Equal(t, CreateInstanceCommand, env.Command)
+			require.Equal(t, common.CreateInstanceCommand, env.Command)
 		} else {
 			require.Equal(t, tc.errString, err.Error())
 		}

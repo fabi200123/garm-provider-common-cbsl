@@ -12,7 +12,7 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package executionv010
+package common
 
 type ExecutionCommand string
 
@@ -24,4 +24,5 @@ const (
 	StartInstanceCommand      ExecutionCommand = "StartInstance"
 	StopInstanceCommand       ExecutionCommand = "StopInstance"
 	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
+	GetVersionInfoCommand     ExecutionCommand = "GetVersionInfo"
 )
