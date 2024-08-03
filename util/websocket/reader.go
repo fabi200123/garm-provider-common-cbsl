@@ -146,6 +146,8 @@ func (w *Reader) handlerReader() {
 		msgType, message, err := w.conn.ReadMessage()
 		if err != nil {
 			if IsErrorOfInterest(err) {
+				// TODO(gabriel-samfira): we should allow for an error channel that can be used to signal
+				// the caller that the connection has been closed.
 				slog.With(slog.Any("error", err)).Error("reading log message")
 			}
 			return
