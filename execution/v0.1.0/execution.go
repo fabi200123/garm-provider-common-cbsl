@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/mod/semver"
+
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
 	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
@@ -61,6 +63,10 @@ func GetEnvironment() (EnvironmentV010, error) {
 		return EnvironmentV010{}, fmt.Errorf("failed to get bootstrap params: %w", err)
 	}
 	env.BootstrapParams = boostrapParams
+
+	if env.InterfaceVersion == "" {
+		env.InterfaceVersion = "v0.1.0"
+	}
 
 	if err := env.Validate(); err != nil {
 		return EnvironmentV010{}, fmt.Errorf("failed to validate execution environment: %w", err)
@@ -120,6 +126,10 @@ func (e EnvironmentV010) Validate() error {
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")
 		}
+	case common.GetVersionCommand:
+		if semver.IsValid(e.InterfaceVersion) {
+			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
+		}
 	default:
 		return fmt.Errorf("unknown GARM_COMMAND: %s", e.Command)
 	}
@@ -176,6 +186,9 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV010) (s
 		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
+	case common.GetVersionCommand:
+		version := env.InterfaceVersion
+		ret = string(version)
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)
 	}
