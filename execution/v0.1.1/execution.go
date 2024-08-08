@@ -67,7 +67,7 @@ func GetEnvironment() (EnvironmentV011, error) {
 	env.BootstrapParams = boostrapParams
 
 	if env.InterfaceVersion == "" {
-		env.InterfaceVersion = "v0.1.0"
+		env.InterfaceVersion = common.Version010
 	}
 
 	if err := env.Validate(); err != nil {
