@@ -75,6 +75,7 @@ type EnvironmentV010 struct {
 	PoolID             string
 	ProviderConfigFile string
 	InstanceID         string
+	InterfaceVersion   string
 	BootstrapParams    params.BootstrapInstance
 }
 

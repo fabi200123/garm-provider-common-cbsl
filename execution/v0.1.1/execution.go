@@ -183,6 +183,12 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
+	case common.GetVersionCommand:
+		version := env.InterfaceVersion
+		if version == "" {
+			version = "v0.1.0"
+		}
+		ret = string(version)
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)
 	}
