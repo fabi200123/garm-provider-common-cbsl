@@ -35,7 +35,7 @@ const (
 	StartInstanceCommand      ExecutionCommand = "StartInstance"
 	StopInstanceCommand       ExecutionCommand = "StopInstance"
 	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
-	GetVersionInfoCommand     ExecutionCommand = "GetVersionInfo"
+	GetVersionCommand         ExecutionCommand = "GetVersion"
 )
 
 func GetBoostrapParamsFromStdin(c ExecutionCommand) (params.BootstrapInstance, error) {
