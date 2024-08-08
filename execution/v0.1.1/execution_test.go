@@ -84,7 +84,13 @@ func (p *testExternalProvider) Start(context.Context, string) error {
 }
 
 func (p *testExternalProvider) GetVersion(context.Context) string {
+	//TODO: implement
 	return "v0.1.1"
+}
+
+func (p *testExternalProvider) ValidatePoolInfo(context.Context, string, string, string, params.BootstrapInstance) error {
+	//TODO: implement
+	return nil
 }
 
 func TestResolveErrorToExitCode(t *testing.T) {
