@@ -199,6 +199,18 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.BootstrapParams); err != nil {
 			return "", fmt.Errorf("failed to validate pool info: %w", err)
 		}
+	case GetConfigJSONSchemaCommand:
+		schema, err := provider.GetConfigJSONSchema(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get config JSON schema: %w", err)
+		}
+		ret = schema
+	case GetExtraSpecsJSONSchemaCommand:
+		schema, err := provider.GetExtraSpecsJSONSchema(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get extra specs JSON schema: %w", err)
+		}
+		ret = schema
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)
 	}

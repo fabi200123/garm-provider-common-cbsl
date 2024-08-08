@@ -93,6 +93,16 @@ func (p *testExternalProvider) ValidatePoolInfo(context.Context, string, string,
 	return nil
 }
 
+func (p *testExternalProvider) GetConfigJSONSchema(context.Context) (string, error) {
+	//TODO: implement
+	return "", nil
+}
+
+func (p *testExternalProvider) GetExtraSpecsJSONSchema(context.Context) (string, error) {
+	//TODO: implement
+	return "", nil
+}
+
 func TestResolveErrorToExitCode(t *testing.T) {
 	tests := []struct {
 		name string

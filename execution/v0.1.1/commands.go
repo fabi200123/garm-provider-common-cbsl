@@ -19,5 +19,7 @@ import (
 )
 
 const (
-	ValidatePoolInfoCommand common.ExecutionCommand = "ValidatePoolInfo"
+	ValidatePoolInfoCommand        common.ExecutionCommand = "ValidatePoolInfo"
+	GetConfigJSONSchemaCommand     common.ExecutionCommand = "GetConfigJSONSchema"
+	GetExtraSpecsJSONSchemaCommand common.ExecutionCommand = "GetExtraSpecsJSONSchema"
 )
