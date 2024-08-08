@@ -15,7 +15,10 @@
 package execution
 
 import (
-	semver "github.com/Masterminds/semver/v3"
+	"fmt"
+	"os"
+
+	"github.com/cloudbase/garm-provider-common/execution/common"
 	executionv010 "github.com/cloudbase/garm-provider-common/execution/v0.1.0"
 	executionv011 "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 )
@@ -23,5 +26,32 @@ import (
 type Environment struct {
 	EnvironmentV010  executionv010.EnvironmentV010
 	EnvironmentV011  executionv011.EnvironmentV011
-	InterfaceVersion semver.Version
+	InterfaceVersion string
+}
+
+func GetEnvironment() (Environment, error) {
+	interfaceVersion := os.Getenv("GARM_INTERFACE_VERSION")
+
+	switch interfaceVersion {
+	case common.Version010:
+		env, err := executionv010.GetEnvironment()
+		if err != nil {
+			return Environment{}, err
+		}
+		return Environment{
+			EnvironmentV010:  env,
+			InterfaceVersion: interfaceVersion,
+		}, nil
+	case common.Version011:
+		env, err := executionv011.GetEnvironment()
+		if err != nil {
+			return Environment{}, err
+		}
+		return Environment{
+			EnvironmentV011:  env,
+			InterfaceVersion: interfaceVersion,
+		}, nil
+	default:
+		return Environment{}, fmt.Errorf("unsupported interface version: %s", interfaceVersion)
+	}
 }
