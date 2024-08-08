@@ -15,19 +15,15 @@
 package executionv010
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
 	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
-
-	"github.com/mattn/go-isatty"
 )
 
 const (
@@ -60,30 +56,11 @@ func GetEnvironment() (EnvironmentV010, error) {
 
 	// If this is a CreateInstance command, we need to get the bootstrap params
 	// from stdin
-	if env.Command == common.CreateInstanceCommand {
-		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-			return EnvironmentV010{}, fmt.Errorf("%s requires data passed into stdin", common.CreateInstanceCommand)
-		}
-
-		var data bytes.Buffer
-		if _, err := io.Copy(&data, os.Stdin); err != nil {
-			return EnvironmentV010{}, fmt.Errorf("failed to copy bootstrap params")
-		}
-
-		if data.Len() == 0 {
-			return EnvironmentV010{}, fmt.Errorf("%s requires data passed into stdin", common.CreateInstanceCommand)
-		}
-
-		var bootstrapParams params.BootstrapInstance
-		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
-			return EnvironmentV010{}, fmt.Errorf("failed to decode instance params: %w", err)
-		}
-		if bootstrapParams.ExtraSpecs == nil {
-			// Initialize ExtraSpecs as an empty JSON object
-			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
-		}
-		env.BootstrapParams = bootstrapParams
+	boostrapParams, err := common.GetBoostrapParamsFromStdin(env.Command)
+	if err != nil {
+		return EnvironmentV010{}, fmt.Errorf("failed to get bootstrap params: %w", err)
 	}
+	env.BootstrapParams = boostrapParams
 
 	if err := env.Validate(); err != nil {
 		return EnvironmentV010{}, fmt.Errorf("failed to validate execution environment: %w", err)
