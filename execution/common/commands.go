@@ -14,6 +14,17 @@
 
 package common
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/cloudbase/garm-provider-common/params"
+	"github.com/mattn/go-isatty"
+)
+
 type ExecutionCommand string
 
 const (
@@ -26,3 +37,34 @@ const (
 	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
 	GetVersionInfoCommand     ExecutionCommand = "GetVersionInfo"
 )
+
+func GetBoostrapParamsFromStdin(c ExecutionCommand) (params.BootstrapInstance, error) {
+	var bootstrapParams params.BootstrapInstance
+	if c == CreateInstanceCommand {
+		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+			return params.BootstrapInstance{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
+		}
+
+		var data bytes.Buffer
+		if _, err := io.Copy(&data, os.Stdin); err != nil {
+			return params.BootstrapInstance{}, fmt.Errorf("failed to copy bootstrap params")
+		}
+
+		if data.Len() == 0 {
+			return params.BootstrapInstance{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
+		}
+
+		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
+			return params.BootstrapInstance{}, fmt.Errorf("failed to decode instance params: %w", err)
+		}
+		if bootstrapParams.ExtraSpecs == nil {
+			// Initialize ExtraSpecs as an empty JSON object
+			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
+		}
+
+		return bootstrapParams, nil
+	}
+
+	// If the command is not CreateInstance, we don't need to read from stdin
+	return params.BootstrapInstance{}, nil
+}
