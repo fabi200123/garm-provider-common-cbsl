@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/mod/semver"
+
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
 	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
@@ -63,6 +65,10 @@ func GetEnvironment() (EnvironmentV011, error) {
 		return EnvironmentV011{}, fmt.Errorf("failed to get bootstrap params: %w", err)
 	}
 	env.BootstrapParams = boostrapParams
+
+	if env.InterfaceVersion == "" {
+		env.InterfaceVersion = "v0.1.0"
+	}
 
 	if err := env.Validate(); err != nil {
 		return EnvironmentV011{}, fmt.Errorf("failed to validate execution environment: %w", err)
@@ -122,10 +128,13 @@ func (e EnvironmentV011) Validate() error {
 		if e.PoolID == "" {
 			return fmt.Errorf("missing pool ID")
 		}
-
 	case common.RemoveAllInstancesCommand:
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")
+		}
+	case common.GetVersionCommand:
+		if semver.IsValid(e.InterfaceVersion) {
+			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
 		}
 	default:
 		return fmt.Errorf("unknown GARM_COMMAND: %s", e.Command)
@@ -185,9 +194,6 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		}
 	case common.GetVersionCommand:
 		version := env.InterfaceVersion
-		if version == "" {
-			version = "v0.1.0"
-		}
 		ret = string(version)
 	case ValidatePoolInfoCommand:
 		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.BootstrapParams); err != nil {
