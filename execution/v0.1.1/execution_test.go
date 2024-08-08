@@ -88,7 +88,7 @@ func (p *testExternalProvider) GetVersion(context.Context) string {
 	return "v0.1.1"
 }
 
-func (p *testExternalProvider) ValidatePoolInfo(context.Context, string, string, string, params.BootstrapInstance) error {
+func (p *testExternalProvider) ValidatePoolInfo(context.Context, string, string, string, string) error {
 	//TODO: implement
 	return nil
 }

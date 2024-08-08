@@ -196,7 +196,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		version := env.InterfaceVersion
 		ret = string(version)
 	case ValidatePoolInfoCommand:
-		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.BootstrapParams); err != nil {
+		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.ExtraSpecs); err != nil {
 			return "", fmt.Errorf("failed to validate pool info: %w", err)
 		}
 	case GetConfigJSONSchemaCommand:

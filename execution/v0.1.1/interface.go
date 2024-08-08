@@ -41,7 +41,7 @@ type ExternalProvider interface {
 	// GetVersion returns the version of the provider.
 	GetVersion(ctx context.Context) string
 	// ValidatePoolInfo will validate the pool info and return an error if it's not valid.
-	ValidatePoolInfo(ctx context.Context, image string, flavor string, providerConfig string, extraspecs params.BootstrapInstance) error
+	ValidatePoolInfo(ctx context.Context, image string, flavor string, providerConfig string, extraspecs string) error
 	// GetConfigJSONSchema will return the JSON schema for the provider's configuration.
 	GetConfigJSONSchema(ctx context.Context) (string, error)
 	// GetExtraSpecsJSONSchema will return the JSON schema for the provider's extra specs.
