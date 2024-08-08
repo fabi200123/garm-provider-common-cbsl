@@ -83,6 +83,11 @@ func (p *testExternalProvider) Start(context.Context, string) error {
 	return nil
 }
 
+func (p *testExternalProvider) GetVersion(context.Context) string {
+	//TODO: Implement this
+	return "0.1.0"
+}
+
 func TestResolveErrorToExitCode(t *testing.T) {
 	tests := []struct {
 		name string
