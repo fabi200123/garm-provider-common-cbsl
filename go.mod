@@ -3,7 +3,6 @@ module github.com/cloudbase/garm-provider-common
 go 1.22
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.4-0.20240702125206-a62d9d2a8413
