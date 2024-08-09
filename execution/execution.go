@@ -15,6 +15,7 @@
 package execution
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -22,6 +23,11 @@ import (
 	executionv010 "github.com/cloudbase/garm-provider-common/execution/v0.1.0"
 	executionv011 "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 )
+
+type ExternalProvider interface {
+	executionv010.ExternalProvider
+	executionv011.ExternalProvider
+}
 
 type Environment struct {
 	EnvironmentV010    executionv010.EnvironmentV010
@@ -59,5 +65,16 @@ func GetEnvironment() (Environment, error) {
 		}, nil
 	default:
 		return Environment{}, fmt.Errorf("unsupported interface version: %s", interfaceVersion)
+	}
+}
+
+func Run(ctx context.Context, provider ExternalProvider, env Environment) (string, error) {
+	switch env.InterfaceVersion {
+	case common.Version010:
+		return executionv010.Run(ctx, provider, env.EnvironmentV010)
+	case common.Version011:
+		return executionv011.Run(ctx, provider, env.EnvironmentV011)
+	default:
+		return "", fmt.Errorf("unsupported interface version: %s", env.InterfaceVersion)
 	}
 }
