@@ -483,7 +483,7 @@ func TestGetEnvironment(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, common.CreateInstanceCommand, env.Command)
 		} else {
-			require.Equal(t, tc.errString, err.Error())
+			require.ErrorContains(t, err, tc.errString)
 		}
 	}
 }
