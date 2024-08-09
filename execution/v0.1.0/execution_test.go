@@ -102,12 +102,12 @@ func TestResolveErrorToExitCode(t *testing.T) {
 		{
 			name: "not found error",
 			err:  gErrors.ErrNotFound,
-			code: ExitCodeNotFound,
+			code: common.ExitCodeNotFound,
 		},
 		{
 			name: "duplicate entity error",
 			err:  gErrors.ErrDuplicateEntity,
-			code: ExitCodeDuplicate,
+			code: common.ExitCodeDuplicate,
 		},
 		{
 			name: "other error",
@@ -118,7 +118,7 @@ func TestResolveErrorToExitCode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			code := ResolveErrorToExitCode(tc.err)
+			code := common.ResolveErrorToExitCode(tc.err)
 			require.Equal(t, tc.code, code)
 		})
 	}
