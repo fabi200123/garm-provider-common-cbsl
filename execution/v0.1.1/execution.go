@@ -17,35 +17,14 @@ package executionv011
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
 	"golang.org/x/mod/semver"
 
-	gErrors "github.com/cloudbase/garm-provider-common/errors"
 	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
 )
-
-const (
-	// ExitCodeNotFound is an exit code that indicates a Not Found error
-	ExitCodeNotFound int = 30
-	// ExitCodeDuplicate is an exit code that indicates a duplicate error
-	ExitCodeDuplicate int = 31
-)
-
-func ResolveErrorToExitCode(err error) int {
-	if err != nil {
-		if errors.Is(err, gErrors.ErrNotFound) {
-			return ExitCodeNotFound
-		} else if errors.Is(err, gErrors.ErrDuplicateEntity) {
-			return ExitCodeDuplicate
-		}
-		return 1
-	}
-	return 0
-}
 
 func GetEnvironment() (EnvironmentV011, error) {
 	env := EnvironmentV011{

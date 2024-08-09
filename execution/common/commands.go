@@ -17,10 +17,12 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	gErrors "github.com/cloudbase/garm-provider-common/errors"
 	"github.com/cloudbase/garm-provider-common/params"
 	"github.com/mattn/go-isatty"
 )
@@ -36,6 +38,13 @@ const (
 	StopInstanceCommand       ExecutionCommand = "StopInstance"
 	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
 	GetVersionCommand         ExecutionCommand = "GetVersion"
+)
+
+const (
+	// ExitCodeNotFound is an exit code that indicates a Not Found error
+	ExitCodeNotFound int = 30
+	// ExitCodeDuplicate is an exit code that indicates a duplicate error
+	ExitCodeDuplicate int = 31
 )
 
 func GetBoostrapParamsFromStdin(c ExecutionCommand) (params.BootstrapInstance, error) {
@@ -67,4 +76,16 @@ func GetBoostrapParamsFromStdin(c ExecutionCommand) (params.BootstrapInstance, e
 
 	// If the command is not CreateInstance, we don't need to read from stdin
 	return params.BootstrapInstance{}, nil
+}
+
+func ResolveErrorToExitCode(err error) int {
+	if err != nil {
+		if errors.Is(err, gErrors.ErrNotFound) {
+			return ExitCodeNotFound
+		} else if errors.Is(err, gErrors.ErrDuplicateEntity) {
+			return ExitCodeDuplicate
+		}
+		return 1
+	}
+	return 0
 }

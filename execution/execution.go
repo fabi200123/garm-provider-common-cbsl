@@ -24,9 +24,11 @@ import (
 )
 
 type Environment struct {
-	EnvironmentV010  executionv010.EnvironmentV010
-	EnvironmentV011  executionv011.EnvironmentV011
-	InterfaceVersion string
+	EnvironmentV010    executionv010.EnvironmentV010
+	EnvironmentV011    executionv011.EnvironmentV011
+	InterfaceVersion   string
+	ProviderConfigFile string
+	ControllerID       string
 }
 
 func GetEnvironment() (Environment, error) {
@@ -39,8 +41,10 @@ func GetEnvironment() (Environment, error) {
 			return Environment{}, err
 		}
 		return Environment{
-			EnvironmentV010:  env,
-			InterfaceVersion: interfaceVersion,
+			EnvironmentV010:    env,
+			ProviderConfigFile: env.ProviderConfigFile,
+			ControllerID:       env.ControllerID,
+			InterfaceVersion:   interfaceVersion,
 		}, nil
 	case common.Version011:
 		env, err := executionv011.GetEnvironment()
@@ -48,8 +52,10 @@ func GetEnvironment() (Environment, error) {
 			return Environment{}, err
 		}
 		return Environment{
-			EnvironmentV011:  env,
-			InterfaceVersion: interfaceVersion,
+			EnvironmentV011:    env,
+			ProviderConfigFile: env.ProviderConfigFile,
+			ControllerID:       env.ControllerID,
+			InterfaceVersion:   interfaceVersion,
 		}, nil
 	default:
 		return Environment{}, fmt.Errorf("unsupported interface version: %s", interfaceVersion)
