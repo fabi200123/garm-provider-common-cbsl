@@ -172,7 +172,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
 	case common.GetVersionCommand:
-		version := env.InterfaceVersion
+		version := provider.GetVersion(ctx)
 		ret = string(version)
 	case common.ValidatePoolInfoCommand:
 		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.ExtraSpecs); err != nil {
