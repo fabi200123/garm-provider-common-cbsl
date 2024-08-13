@@ -40,6 +40,13 @@ const (
 	GetVersionCommand         ExecutionCommand = "GetVersion"
 )
 
+// V0.1.1 commands
+const (
+	ValidatePoolInfoCommand        ExecutionCommand = "ValidatePoolInfo"
+	GetConfigJSONSchemaCommand     ExecutionCommand = "GetConfigJSONSchema"
+	GetExtraSpecsJSONSchemaCommand ExecutionCommand = "GetExtraSpecsJSONSchema"
+)
+
 const (
 	// ExitCodeNotFound is an exit code that indicates a Not Found error
 	ExitCodeNotFound int = 30
