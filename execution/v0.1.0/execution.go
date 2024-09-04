@@ -106,7 +106,7 @@ func (e EnvironmentV010) Validate() error {
 			return fmt.Errorf("missing controller ID")
 		}
 	case common.GetVersionCommand:
-		if semver.IsValid(e.InterfaceVersion) {
+		if !semver.IsValid(e.InterfaceVersion) {
 			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
 		}
 	default:
