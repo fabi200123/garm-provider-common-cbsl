@@ -24,11 +24,6 @@ import (
 	executionv011 "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 )
 
-type ExternalProvider interface {
-	executionv010.ExternalProvider
-	executionv011.ExternalProvider
-}
-
 type Environment struct {
 	EnvironmentV010    executionv010.EnvironmentV010
 	EnvironmentV011    executionv011.EnvironmentV011
@@ -41,7 +36,7 @@ func GetEnvironment() (Environment, error) {
 	interfaceVersion := os.Getenv("GARM_INTERFACE_VERSION")
 
 	switch interfaceVersion {
-	case common.Version010:
+	case common.Version010, "":
 		env, err := executionv010.GetEnvironment()
 		if err != nil {
 			return Environment{}, err
@@ -68,13 +63,23 @@ func GetEnvironment() (Environment, error) {
 	}
 }
 
-func Run(ctx context.Context, provider ExternalProvider, env Environment) (string, error) {
-	switch env.InterfaceVersion {
-	case common.Version010:
-		return executionv010.Run(ctx, provider, env.EnvironmentV010)
+func (e Environment) Run(ctx context.Context, provider interface{}) (string, error) {
+	switch e.InterfaceVersion {
+	case common.Version010, "":
+		prov, ok := provider.(executionv010.ExternalProvider)
+		if !ok {
+			return "", fmt.Errorf("provider does not implement %s ExternalProvider", e.InterfaceVersion)
+		}
+		return e.EnvironmentV010.Run(ctx, prov)
+
 	case common.Version011:
-		return executionv011.Run(ctx, provider, env.EnvironmentV011)
+		prov, ok := provider.(executionv011.ExternalProvider)
+		if !ok {
+			return "", fmt.Errorf("provider does not implement %s ExternalProvider", e.InterfaceVersion)
+		}
+		return e.EnvironmentV011.Run(ctx, prov)
+
 	default:
-		return "", fmt.Errorf("unsupported interface version: %s", env.InterfaceVersion)
+		return "", fmt.Errorf("unsupported interface version: %s", e.InterfaceVersion)
 	}
 }

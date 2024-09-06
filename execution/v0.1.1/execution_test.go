@@ -88,6 +88,11 @@ func (p *testExternalProvider) GetVersion(context.Context) string {
 	return "v0.1.1"
 }
 
+func (p *testExternalProvider) GetSupportedInterfaceVersions(context.Context) []string {
+	//TODO: implement
+	return []string{"v0.1.0", "v0.1.1"}
+}
+
 func (p *testExternalProvider) ValidatePoolInfo(context.Context, string, string, string, string) error {
 	//TODO: implement
 	return nil
@@ -161,7 +166,6 @@ func TestValidateEnvironment(t *testing.T) {
 				PoolID:             "pool-id",
 				ProviderConfigFile: tmpfile.Name(),
 				InstanceID:         "instance-id",
-				InterfaceVersion:   "v0.1.1",
 				BootstrapParams: params.BootstrapInstance{
 					Name: "instance-name",
 				},
@@ -396,7 +400,7 @@ func TestRun(t *testing.T) {
 			mockInstance: tc.providerInstance,
 		}
 
-		out, err := Run(context.Background(), &testExternalProvider, tc.providerEnv)
+		out, err := tc.providerEnv.Run(context.Background(), &testExternalProvider)
 
 		if tc.expectedErrMsg == "" {
 			require.NoError(t, err)
