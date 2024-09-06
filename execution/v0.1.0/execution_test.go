@@ -380,7 +380,7 @@ func TestRun(t *testing.T) {
 			mockInstance: tc.providerInstance,
 		}
 
-		out, err := Run(context.Background(), &testExternalProvider, tc.providerEnv)
+		out, err := tc.providerEnv.Run(context.Background(), &testExternalProvider)
 
 		if tc.expectedErrMsg == "" {
 			require.NoError(t, err)
