@@ -26,6 +26,8 @@ import (
 type ExternalProvider interface {
 	// The common ExternalProvider interface
 	common.ExternalProvider
+	// GetSupportedInterfaceVersions will return the supported interface versions.
+	GetSupportedInterfaceVersions(ctx context.Context) []string
 	// ValidatePoolInfo will validate the pool info and return an error if it's not valid.
 	ValidatePoolInfo(ctx context.Context, image string, flavor string, providerConfig string, extraspecs string) error
 	// GetConfigJSONSchema will return the JSON schema for the provider's configuration.

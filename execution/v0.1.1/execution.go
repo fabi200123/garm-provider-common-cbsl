@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/mod/semver"
-
 	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
 )
@@ -33,7 +31,6 @@ func GetEnvironment() (EnvironmentV011, error) {
 		PoolID:             os.Getenv("GARM_POOL_ID"),
 		ProviderConfigFile: os.Getenv("GARM_PROVIDER_CONFIG_FILE"),
 		InstanceID:         os.Getenv("GARM_INSTANCE_ID"),
-		InterfaceVersion:   os.Getenv("GARM_INTERFACE_VERSION"),
 		ExtraSpecs:         os.Getenv("GARM_POOL_EXTRASPECS"),
 	}
 
@@ -44,10 +41,6 @@ func GetEnvironment() (EnvironmentV011, error) {
 		return EnvironmentV011{}, fmt.Errorf("failed to get bootstrap params: %w", err)
 	}
 	env.BootstrapParams = boostrapParams
-
-	if env.InterfaceVersion == "" {
-		env.InterfaceVersion = common.Version010
-	}
 
 	if err := env.Validate(); err != nil {
 		return EnvironmentV011{}, fmt.Errorf("failed to validate execution environment: %w", err)
@@ -62,7 +55,6 @@ type EnvironmentV011 struct {
 	PoolID             string
 	ProviderConfigFile string
 	InstanceID         string
-	InterfaceVersion   string
 	ExtraSpecs         string
 	BootstrapParams    params.BootstrapInstance
 }
@@ -111,26 +103,21 @@ func (e EnvironmentV011) Validate() error {
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")
 		}
-	case common.GetVersionCommand:
-		if !semver.IsValid(e.InterfaceVersion) {
-			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
-		}
-	case common.ValidatePoolInfoCommand, common.GetConfigJSONSchemaCommand,
+	case common.GetVersionCommand, common.GetSupportedInterfaceVersionsCommand,
+		common.ValidatePoolInfoCommand, common.GetConfigJSONSchemaCommand,
 		common.GetExtraSpecsJSONSchemaCommand:
-		if !semver.IsValid(e.InterfaceVersion) && e.InterfaceVersion == common.Version010 {
-			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
-		}
+		return nil
 	default:
 		return fmt.Errorf("unknown GARM_COMMAND: %s", e.Command)
 	}
 	return nil
 }
 
-func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (string, error) {
+func (e EnvironmentV011) Run(ctx context.Context, provider ExternalProvider) (string, error) {
 	var ret string
-	switch env.Command {
+	switch e.Command {
 	case common.CreateInstanceCommand:
-		instance, err := provider.CreateInstance(ctx, env.BootstrapParams)
+		instance, err := provider.CreateInstance(ctx, e.BootstrapParams)
 		if err != nil {
 			return "", fmt.Errorf("failed to create instance in provider: %w", err)
 		}
@@ -141,7 +128,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		}
 		ret = string(asJs)
 	case common.GetInstanceCommand:
-		instance, err := provider.GetInstance(ctx, env.InstanceID)
+		instance, err := provider.GetInstance(ctx, e.InstanceID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get instance from provider: %w", err)
 		}
@@ -151,7 +138,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		}
 		ret = string(asJs)
 	case common.ListInstancesCommand:
-		instances, err := provider.ListInstances(ctx, env.PoolID)
+		instances, err := provider.ListInstances(ctx, e.PoolID)
 		if err != nil {
 			return "", fmt.Errorf("failed to list instances from provider: %w", err)
 		}
@@ -161,7 +148,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		}
 		ret = string(asJs)
 	case common.DeleteInstanceCommand:
-		if err := provider.DeleteInstance(ctx, env.InstanceID); err != nil {
+		if err := provider.DeleteInstance(ctx, e.InstanceID); err != nil {
 			return "", fmt.Errorf("failed to delete instance from provider: %w", err)
 		}
 	case common.RemoveAllInstancesCommand:
@@ -169,18 +156,25 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 			return "", fmt.Errorf("failed to destroy environment: %w", err)
 		}
 	case common.StartInstanceCommand:
-		if err := provider.Start(ctx, env.InstanceID); err != nil {
+		if err := provider.Start(ctx, e.InstanceID); err != nil {
 			return "", fmt.Errorf("failed to start instance: %w", err)
 		}
 	case common.StopInstanceCommand:
-		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
+		if err := provider.Stop(ctx, e.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
 	case common.GetVersionCommand:
 		version := provider.GetVersion(ctx)
 		ret = string(version)
+	case common.GetSupportedInterfaceVersionsCommand:
+		versions := provider.GetSupportedInterfaceVersions(ctx)
+		asJs, err := json.Marshal(versions)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal response: %w", err)
+		}
+		ret = string(asJs)
 	case common.ValidatePoolInfoCommand:
-		if err := provider.ValidatePoolInfo(ctx, env.BootstrapParams.Image, env.BootstrapParams.Flavor, env.ProviderConfigFile, env.ExtraSpecs); err != nil {
+		if err := provider.ValidatePoolInfo(ctx, e.BootstrapParams.Image, e.BootstrapParams.Flavor, e.ProviderConfigFile, e.ExtraSpecs); err != nil {
 			return "", fmt.Errorf("failed to validate pool info: %w", err)
 		}
 	case common.GetConfigJSONSchemaCommand:
@@ -196,7 +190,7 @@ func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV011) (s
 		}
 		ret = schema
 	default:
-		return "", fmt.Errorf("invalid command: %s", env.Command)
+		return "", fmt.Errorf("invalid command: %s", e.Command)
 	}
 	return ret, nil
 }
