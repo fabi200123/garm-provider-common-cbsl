@@ -247,6 +247,43 @@ Param(
 
 $ErrorActionPreference="Stop"
 
+function Start-ExecuteWithRetry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ScriptBlock]$ScriptBlock,
+        [int]$MaxRetryCount=10,
+        [int]$RetryInterval=3,
+        [string]$RetryMessage,
+        [array]$ArgumentList=@()
+    )
+    PROCESS {
+        $currentErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $retryCount = 0
+        while ($true) {
+            try {
+                $res = Invoke-Command -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
+                $ErrorActionPreference = $currentErrorActionPreference
+                return $res
+            } catch [System.Exception] {
+                $retryCount++
+                if ($retryCount -gt $MaxRetryCount) {
+                    $ErrorActionPreference = $currentErrorActionPreference
+                    throw
+                } else {
+                    if($RetryMessage) {
+                        Write-Output $RetryMessage
+                    } elseif($_) {
+                        Write-Output $_
+                    }
+                    Start-Sleep $RetryInterval
+                }
+            }
+        }
+    }
+}
+
 function Invoke-FastWebRequest {
 	[CmdletBinding()]
 	Param(
@@ -483,7 +520,10 @@ function Install-Runner() {
 			}
 		}
 		$downloadPath = Join-Path $env:TMP {{.FileName}}
-		Invoke-FastWebRequest -Uri $DownloadURL -OutFile $downloadPath -Headers $DownloadTokenHeaders
+		# Download runner with retry
+		Start-ExecuteWithRetry -ScriptBlock {
+			Invoke-FastWebRequest -Uri $DownloadURL -OutFile $downloadPath -Headers $DownloadTokenHeaders
+		} -MaxRetryCount 5 -RetryInterval 5 -RetryMessage "Retrying download of runner..."
 
 		$runnerDir = "C:\runner"
 		mkdir $runnerDir
@@ -517,7 +557,10 @@ function Install-Runner() {
 		Update-GarmStatus -Message "runner successfully installed" -CallbackURL $CallbackURL -Status "idle" | Out-Null
 
 		{{- else }}
-		$GithubRegistrationToken = Invoke-WebRequest -UseBasicParsing -Headers @{"Accept"="application/json"; "Authorization"="Bearer $Token"} -Uri $MetadataURL/runner-registration-token/
+		# Fetch GitHub runner registration token with retry
+		$GithubRegistrationToken = Start-ExecuteWithRetry -ScriptBlock {
+			Invoke-WebRequest -UseBasicParsing -Headers @{"Accept"="application/json"; "Authorization"="Bearer $Token"} -Uri $MetadataURL/runner-registration-token/
+		} -MaxRetryCount 5 -RetryInterval 5 -RetryMessage "Retrying download of GitHub registration token..."
 		{{- if .GitHubRunnerGroup }}
 		./config.cmd --unattended --url "{{ .RepoURL }}" --token $GithubRegistrationToken --runnergroup {{.GitHubRunnerGroup}} --name "{{ .RunnerName }}" --labels "{{ .RunnerLabels }}" --ephemeral --runasservice
 		{{- else}}
