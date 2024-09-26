@@ -268,16 +268,28 @@ function Start-ExecuteWithRetry {
                 return $res
             } catch [System.Exception] {
                 $retryCount++
+
+                if ($_.Exception -is [System.Net.WebException]) {
+                    $webResponse = $_.Exception.Response
+					# Skip retry on Error: 4XX (e.g. 401 Unauthorized, 404 Not Found etc.)
+                    if ($webResponse -and $webResponse.StatusCode -ge 400 -and $webResponse.StatusCode -lt 500) {
+                        # Skip retry on 4xx errors
+                        Write-Output "Encountered non-retryable error (4xx): $($_.Exception.Message)"
+                        $ErrorActionPreference = $currentErrorActionPreference
+                        throw
+                    }
+                }
+
                 if ($retryCount -gt $MaxRetryCount) {
                     $ErrorActionPreference = $currentErrorActionPreference
                     throw
                 } else {
-                    if($RetryMessage) {
+                    if ($RetryMessage) {
                         Write-Output $RetryMessage
-                    } elseif($_) {
+                    } elseif ($_) {
                         Write-Output $_
                     }
-                    Start-Sleep $RetryInterval
+                    Start-Sleep -Seconds $RetryInterval
                 }
             }
         }
