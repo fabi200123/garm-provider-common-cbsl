@@ -82,34 +82,6 @@ function fail() {
 	exit 1
 }
 
-# This will echo the version number in the filename. Given a file name like: actions-runner-osx-x64-2.299.1.tar.gz
-# this will output: 2.299.1
-function getRunnerVersion() {
-	FILENAME="{{ .FileName }}"
-	[[ $FILENAME =~ ([0-9]+\.[0-9]+\.[0-9+]) ]]
-	echo $BASH_REMATCH
-}
-
-function getCachedToolsPath() {
-	CACHED_RUNNER="/opt/cache/actions-runner/latest"
-	if [ -d "$CACHED_RUNNER" ];then
-		echo "$CACHED_RUNNER"
-		return 0
-	fi
-
-	VERSION=$(getRunnerVersion)
-	if [ -z "$VERSION" ]; then
-		return 0
-	fi
-
-	CACHED_RUNNER="/opt/cache/actions-runner/$VERSION"
-	if [ -d "$CACHED_RUNNER" ];then
-		echo "$CACHED_RUNNER"
-		return 0
-	fi
-	return 0
-}
-
 function downloadAndExtractRunner() {
 	sendStatus "downloading tools from {{ .DownloadURL }}"
 	if [ ! -z "{{ .TempDownloadToken }}" ]; then
@@ -122,25 +94,23 @@ function downloadAndExtractRunner() {
 	# chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R /home/{{ .RunnerUsername }}/actions-runner/ || fail "failed to change owner"
 }
 
-CACHED_RUNNER=$(getCachedToolsPath)
-if [ -z "$CACHED_RUNNER" ];then
+RUN_HOME="/home/{{ .RunnerUsername }}/actions-runner"
+if [! -d "$RUN_HOME" ];then
 	downloadAndExtractRunner
 	sendStatus "installing dependencies"
-	cd /home/{{ .RunnerUsername }}/actions-runner
+	cd "$RUN_HOME"
 	sudo ./bin/installdependencies.sh || fail "failed to install dependencies"
 else
-	sendStatus "using cached runner found in $CACHED_RUNNER"
+	sendStatus "using cached runner found in $RUN_HOME"
 	OFS_AVAIL=1
-	RUN_HOME="/home/{{ .RunnerUsername }}/actions-runner"
 	sudo mkdir -p $OFS_DIR/upper-layer $OFS_DIR/work-layer $RUN_HOME
-	sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R $OFS_DIR/upper-layer $OFS_DIR/work-layer $CACHED_RUNNER $RUN_HOME
-	sudo mount -t overlay overlay -o lowerdir=$CACHED_RUNNER,upperdir=$OFS_DIR/upper-layer,workdir=$OFS_DIR/work-layer $RUN_HOME || OFS_AVAIL=0
+	sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R $OFS_DIR/upper-layer $OFS_DIR/work-layer $RUN_HOME $RUN_HOME
+	sudo mount -t overlay overlay -o lowerdir=$RUN_HOME,upperdir=$OFS_DIR/upper-layer,workdir=$OFS_DIR/work-layer $RUN_HOME || OFS_AVAIL=0
 	if [ $OFS_AVAIL -eq 0 ];then
 		sendStatus "falling back to non-overlayfs mode"
-		sudo cp -a "$CACHED_RUNNER/." $RUN_HOME || fail "failed to copy cached runner"
 		sudo chown {{ .RunnerUsername }}:{{ .RunnerGroup }} -R "$RUN_HOME" || fail "failed to change owner"
 	fi
-	cd /home/{{ .RunnerUsername }}/actions-runner
+	cd "$RUN_HOME"
 fi
 
 
