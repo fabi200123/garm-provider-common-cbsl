@@ -247,6 +247,55 @@ Param(
 
 $ErrorActionPreference="Stop"
 
+function Start-ExecuteWithRetry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ScriptBlock]$ScriptBlock,
+        [int]$MaxRetryCount=10,
+        [int]$RetryInterval=3,
+        [string]$RetryMessage,
+        [array]$ArgumentList=@()
+    )
+    PROCESS {
+        $currentErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $retryCount = 0
+        while ($true) {
+            try {
+                $res = Invoke-Command -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
+                $ErrorActionPreference = $currentErrorActionPreference
+                return $res
+            } catch [System.Exception] {
+                $retryCount++
+
+                if ($_.Exception -is [System.Net.WebException]) {
+                    $webResponse = $_.Exception.Response
+					# Skip retry on Error: 4XX (e.g. 401 Unauthorized, 404 Not Found etc.)
+                    if ($webResponse -and $webResponse.StatusCode -ge 400 -and $webResponse.StatusCode -lt 500) {
+                        # Skip retry on 4xx errors
+                        Write-Output "Encountered non-retryable error (4xx): $($_.Exception.Message)"
+                        $ErrorActionPreference = $currentErrorActionPreference
+                        throw
+                    }
+                }
+
+                if ($retryCount -gt $MaxRetryCount) {
+                    $ErrorActionPreference = $currentErrorActionPreference
+                    throw
+                } else {
+                    if ($RetryMessage) {
+                        Write-Output $RetryMessage
+                    } elseif ($_) {
+                        Write-Output $_
+                    }
+                    Start-Sleep -Seconds $RetryInterval
+                }
+            }
+        }
+    }
+}
+
 function Invoke-FastWebRequest {
 	[CmdletBinding()]
 	Param(
@@ -473,24 +522,32 @@ function Install-Runner() {
 			Import-Certificate -CertificateData $data -StoreName Root -StoreLocation LocalMachine
 		}
 
-		Update-GarmStatus -CallbackURL $CallbackURL -Message "downloading tools from $DownloadURL"
+		$runnerDir = "C:\actions-runner"
+		# Check if a cached runner is available
+		if (-not (Test-Path $runnerDir)) {
+			# No cached runner found, proceed to download and extract
+			Update-GarmStatus -CallbackURL $CallbackURL -Message "downloading tools from {{ .DownloadURL }}"
 
-		$downloadToken="{{.TempDownloadToken}}"
-		$DownloadTokenHeaders=@{}
-		if ($downloadToken.Length -gt 0) {
-			$DownloadTokenHeaders=@{
-				"Authorization"="Bearer $downloadToken"
+			$downloadToken="{{.TempDownloadToken}}"
+			$DownloadTokenHeaders=@{}
+			if ($downloadToken.Length -gt 0) {
+				$DownloadTokenHeaders=@{
+					"Authorization"="Bearer $downloadToken"
+				}
 			}
+
+			$downloadPath = Join-Path $env:TMP "{{ .FileName }}"
+			Start-ExecuteWithRetry -ScriptBlock {
+				Invoke-FastWebRequest -Uri "{{ .DownloadURL }}" -OutFile $downloadPath -Headers $DownloadTokenHeaders
+			} -MaxRetryCount 5 -RetryInterval 5 -RetryMessage "Retrying download of runner..."
+
+			mkdir $runnerDir
+			Update-GarmStatus -CallbackURL $CallbackURL -Message "extracting runner"
+			Add-Type -AssemblyName System.IO.Compression.FileSystem
+			[System.IO.Compression.ZipFile]::ExtractToDirectory($downloadPath, "$runnerDir")
+		} else {
+			Update-GarmStatus -CallbackURL $CallbackURL -Message "using cached runner found at $runnerDir"
 		}
-		$downloadPath = Join-Path $env:TMP {{.FileName}}
-		Invoke-FastWebRequest -Uri $DownloadURL -OutFile $downloadPath -Headers $DownloadTokenHeaders
-
-		$runnerDir = "C:\runner"
-		mkdir $runnerDir
-
-		Update-GarmStatus -CallbackURL $CallbackURL -Message "extracting runner"
-		Add-Type -AssemblyName System.IO.Compression.FileSystem
-		[System.IO.Compression.ZipFile]::ExtractToDirectory($downloadPath, "$runnerDir")
 
 		Update-GarmStatus -CallbackURL $CallbackURL -Message "configuring and starting runner"
 		cd $runnerDir
@@ -511,13 +568,16 @@ function Install-Runner() {
 
 		Update-GarmStatus -CallbackURL $CallbackURL -Message "Creating system service"
 		$SVC_NAME=(gc -raw $serviceNameFile)
-		New-Service -Name "$SVC_NAME" -BinaryPathName "C:\runner\bin\RunnerService.exe" -DisplayName "$SVC_NAME" -Description "GitHub Actions Runner ($SVC_NAME)" -StartupType Automatic
+		New-Service -Name "$SVC_NAME" -BinaryPathName "C:\actions-runner\bin\RunnerService.exe" -DisplayName "$SVC_NAME" -Description "GitHub Actions Runner ($SVC_NAME)" -StartupType Automatic
 		Start-Service "$SVC_NAME"
 		Set-SystemInfo -CallbackURL $CallbackURL -RunnerDir $runnerDir -BearerToken $Token
 		Update-GarmStatus -Message "runner successfully installed" -CallbackURL $CallbackURL -Status "idle" | Out-Null
 
 		{{- else }}
-		$GithubRegistrationToken = Invoke-WebRequest -UseBasicParsing -Headers @{"Accept"="application/json"; "Authorization"="Bearer $Token"} -Uri $MetadataURL/runner-registration-token/
+		# Fetch GitHub runner registration token with retry
+		$GithubRegistrationToken = Start-ExecuteWithRetry -ScriptBlock {
+			Invoke-WebRequest -UseBasicParsing -Headers @{"Accept"="application/json"; "Authorization"="Bearer $Token"} -Uri $MetadataURL/runner-registration-token/
+		} -MaxRetryCount 5 -RetryInterval 5 -RetryMessage "Retrying download of GitHub registration token..."
 		{{- if .GitHubRunnerGroup }}
 		./config.cmd --unattended --url "{{ .RepoURL }}" --token $GithubRegistrationToken --runnergroup {{.GitHubRunnerGroup}} --name "{{ .RunnerName }}" --labels "{{ .RunnerLabels }}" --ephemeral --runasservice
 		{{- else}}
